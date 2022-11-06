@@ -1,0 +1,3 @@
+[submodule "KitX.Loader.Python"]
+	path = KitX.Loader.Python
+	url = git@github.com:LYF511/KitX.Loader.Python.git
