@@ -131,7 +131,8 @@ namespace KitX.Loader.WPF.Core
         {
             if (File.Exists(path))
             {
-                DirectoryCatalog catalog = new(Path.GetDirectoryName(path), Path.GetFileName(path));
+                DirectoryCatalog catalog = new(Path.GetDirectoryName(path),
+                    Path.GetFileName(path));
                 CompositionContainer container = new(catalog);
                 IEnumerable<IIdentityInterface> sub = container.GetExportedValues<IIdentityInterface>();
                 foreach (var item in sub)
