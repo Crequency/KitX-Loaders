@@ -139,6 +139,7 @@ namespace KitX.Loader.WPF.Core
                 {
                     RegisterPluginStruct(item);
                     controller = item.GetController();
+                    controller.SetRootPath(Path.GetDirectoryName(path));
                     controller.Start();
                     break;
                 }
