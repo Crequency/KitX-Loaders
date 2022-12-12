@@ -1,0 +1,50 @@
+{
+  "Name": "Plugin.Name",
+  "Version": "v1.0.0",
+  "DisplayName": {
+    "zh-cn": "\u663E\u793A\u540D\u79F0",
+    "en-us": "Display Name"
+  },
+  "AuthorName": "AuthorName",
+  "PublisherName": "PublisherName",
+  "AuthorLink": "https://blog.catrol.cn",
+  "PublisherLink": "https://www.catrol.cn",
+  "SimpleDescription": {
+    "zh-cn": "\u7B80\u5355\u63CF\u8FF0",
+    "en-us": "SimpleDescription"
+  },
+  "ComplexDescription": {
+    "zh-cn": "\u590D\u6742\u63CF\u8FF0",
+    "en-us": "ComplexDescription"
+  },
+  "TotalDescriptionInMarkdown": {
+    "zh-cn": "Markdown \u8BED\u6CD5\u5B8C\u6574\u63CF\u8FF0",
+    "en-us": "TotalDescriptionInMarkdown"
+  },
+  "IconInBase64": "Base64 Format Icon",
+  "PublishDate": "2022-12-12T17:04:05.4462635+08:00",
+  "LastUpdateDate": "2022-12-12T17:04:05.4476778+08:00",
+  "IsMarketVersion": false,
+  "Tags": {},
+  "Functions": [
+    {
+      "Name": "FunctionName",
+      "DisplayNames": {
+        "zh-cn": "\u529F\u80FD\u663E\u793A\u540D\u79F0",
+        "en-us": "DisplayNames"
+      },
+      "Parameters": {
+        "ParameterName": {
+          "zh-cn": "\u53C2\u6570\u663E\u793A\u540D\u79F0",
+          "en-us": "Parameter Display Name"
+        }
+      },
+      "ParametersType": [
+        "string"
+      ],
+      "HasAppendParameters": false,
+      "ReturnValueType": "void"
+    }
+  ],
+  "RootStartupFileName": "RootStartupFileName"
+}
