@@ -16,7 +16,7 @@ int main(int argc, std::string argv[] )
     }
     int a, b;
     std::cin >> a >> b;
-    std::cout << a + b << "\n";
+    std::cout << a + b << " \n";
     return 0;
 }
 
