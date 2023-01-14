@@ -5,8 +5,6 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <BaseOutputPath>..\..\KitX Build\Loaders\WPF.Core</BaseOutputPath>
-    <BaseIntermediateOutputPath>..\..\KitX Build\Temp\Loaders\WPF.Core</BaseIntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
