@@ -3,4 +3,8 @@ project(KitX_Loader_Cpp_Self)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(KitX_Loader_Cpp_Self loader.cpp)
+add_library(
+        KitX_Loader_Cpp_Self
+        loader.h loader.cpp
+        include/ip_address/ip_address.h include/ip_address/ip_address.cpp
+)
