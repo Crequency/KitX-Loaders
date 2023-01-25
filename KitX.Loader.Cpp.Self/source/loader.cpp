@@ -1,4 +1,4 @@
-#include "loader.h"
+#include "../include/loader.h"
 
 namespace KitX::Loaders::Cpp::Self{
     void Init(Contract::Cpp::IIdentifyInterface *iidi){

@@ -5,6 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_library(
         KitX_Loader_Cpp_Self
-        loader.h loader.cpp
-        include/ip_address/ip_address.h include/ip_address/ip_address.cpp
+        include/loader.h source/loader.cpp
+        include/modules/ip_address/ip_address.h source/modules/ip_address/ip_address.cpp
 )

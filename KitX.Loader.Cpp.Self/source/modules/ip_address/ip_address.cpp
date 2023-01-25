@@ -2,7 +2,7 @@
 // Created by Dynesshely on 2023.01.24.
 //
 
-#include "ip_address.h"
+#include "../../../include/modules/ip_address/ip_address.h"
 
 namespace KitX::Loaders::Cpp::Self::Include{
 
