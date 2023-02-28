@@ -21,6 +21,58 @@ namespace KitX.Loader.WPF.Core
     public partial class App : Application
     {
         /// <summary>
+        /// 处理启动参数
+        /// </summary>
+        /// <param name="args">参数列表</param>
+        private static void ProcessStartupArgs(string[] args)
+        {
+            for (int i = 0; i < args.Length; ++i)
+            {
+                if (i != args.Length - 1)
+                {
+                    switch (args[i])
+                    {
+                        case "--load":
+                            ++i;
+                            pluginPath = args[i];
+                            break;
+                        case "--connect":
+                            ++i;
+                            string hostname = args[i].Split(':')[0];
+                            string port = args[i].Split(':')[1];
+                            int portNum;
+                            if (int.TryParse(port, out portNum))
+                            {
+                                try
+                                {
+                                    client = new();
+                                    client.Connect(hostname, portNum);
+                                    reciveMessageThread = new(ReciveMessage);
+                                    reciveMessageThread.Start();
+                                }
+                                catch (Exception ex)
+                                {
+                                    client.Dispose();
+                                    MessageBox.Show($"Connection failed!\n{ex.Message}");
+                                    Console.WriteLine($"Connection failed!\n{ex.Message}");
+                                }
+                            }
+                            else Console.WriteLine("Bad port number!");
+                            break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 初始化加载器
+        /// </summary>
+        private static void InitLoader()
+        {
+            pluginSentCommandsBuffer = new();
+        }
+
+        /// <summary>
         /// 启动事件
         /// </summary>
         /// <param name="sender">...</param>
@@ -29,47 +81,16 @@ namespace KitX.Loader.WPF.Core
         {
             try
             {
-                for (int i = 0; i < e.Args.Length; ++i)
-                {
-                    if (i != e.Args.Length - 1)
-                    {
-                        switch (e.Args[i])
-                        {
-                            case "--load":
-                                ++i;
-                                pluginPath = e.Args[i];
-                                break;
-                            case "--connect":
-                                ++i;
-                                string hostname = e.Args[i].Split(':')[0];
-                                string port = e.Args[i].Split(':')[1];
-                                int portNum;
-                                if (int.TryParse(port, out portNum))
-                                {
-                                    try
-                                    {
-                                        client = new();
-                                        client.Connect(hostname, portNum);
-                                        reciveMessageThread = new(ReciveMessage);
-                                        reciveMessageThread.Start();
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        client.Dispose();
-                                        MessageBox.Show($"Connection failed!\n{ex.Message}");
-                                        Console.WriteLine($"Connection failed!\n{ex.Message}");
-                                    }
-                                }
-                                else Console.WriteLine("Bad port number!");
-                                break;
-                        }
-                    }
-                }
+                InitLoader();
+
+                ProcessStartupArgs(e.Args);
+
                 LoadPlugin(pluginPath);
             }
             catch (Exception o)
             {
-                MessageBox.Show(o.Message, "Loader Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(o.Message, "Loader Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
                 Console.WriteLine(o.Message);
                 Environment.Exit(1);
             }
@@ -123,6 +144,21 @@ namespace KitX.Loader.WPF.Core
         private static IController? controller;
         private static PluginStruct pluginStruct;
 
+        private static Queue<Command>? pluginSentCommandsBuffer = null;
+
+        /// <summary>
+        /// 初始化插件
+        /// </summary>
+        /// <param name="plugin">插件接口实例</param>
+        private static void InitPlugin(IIdentityInterface plugin, string path)
+        {
+            RegisterPluginStruct(plugin);
+            controller = plugin.GetController();
+            controller.SetRootPath(Path.GetDirectoryName(path));
+            controller.SetCommandsSendBuffer(ref pluginSentCommandsBuffer);
+            controller.Start();
+        }
+
         /// <summary>
         /// 加载插件
         /// </summary>
@@ -137,10 +173,7 @@ namespace KitX.Loader.WPF.Core
                 IEnumerable<IIdentityInterface> sub = container.GetExportedValues<IIdentityInterface>();
                 foreach (var item in sub)
                 {
-                    RegisterPluginStruct(item);
-                    controller = item.GetController();
-                    controller.SetRootPath(Path.GetDirectoryName(path));
-                    controller.Start();
+                    InitPlugin(item, path);
                     break;
                 }
                 //MessageBox.Show(GetPluginStructInJson(GetPluginStruct()));
