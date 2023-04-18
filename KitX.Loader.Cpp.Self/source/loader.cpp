@@ -1,11 +1,14 @@
-#include "../include/loader.h"
+#include <loader.hpp>
 
 namespace KitX::Loaders::Cpp::Self{
-    void Init(Contract::Cpp::IIdentifyInterface *iidi){
 
+    void Init(Contract::Cpp::IIdentifyInterface *iidi){
+        identifyInterface = iidi;
     }
 
-    int BeginConnect(Self::Include::ip_address address, short port){
+    int BeginConnect(ip_address address, short port){
+
+
 
         return 0;
     }

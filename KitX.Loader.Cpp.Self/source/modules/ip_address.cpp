@@ -2,9 +2,9 @@
 // Created by Dynesshely on 2023.01.24.
 //
 
-#include "../../../include/modules/ip_address/ip_address.h"
+#include <ip_address.hpp>
 
-namespace KitX::Loaders::Cpp::Self::Include{
+namespace KitX::Loaders::Cpp::Self{
 
     void ip_address::v4Set(char a, char b, char c, char d) {
         v4_A = a, v4_B = b, v4_C = c, v4_D = d;
@@ -18,5 +18,14 @@ namespace KitX::Loaders::Cpp::Self::Include{
             *ip[index] = value;
         else return -1;
         return 0;
+    }
+
+    char* ip_address::v4toCharArray(){
+        auto ip = new char[4];
+        ip[0] = v4_A;
+        ip[1] = v4_B;
+        ip[2] = v4_C;
+        ip[3] = v4_D;
+        return ip;
     }
 }

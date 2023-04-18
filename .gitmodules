@@ -1,3 +1,6 @@
 [submodule "KitX.Loader.Python"]
 	path = KitX.Loader.Python
 	url = git@github.com:LYF511/KitX.Loader.Python.git
+[submodule "KitX.Loader.Cpp.Self/lib/KitX-Contracts"]
+	path = KitX.Loader.Cpp.Self/lib/KitX-Contracts
+	url = git@github.com:Crequency/KitX-Contracts.git
