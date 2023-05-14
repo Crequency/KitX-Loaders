@@ -7,4 +7,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="KitX.Contract.CSharp" Version="23.4.6543.429" />
+    <PackageReference Include="KitX.Web.Rules" Version="23.4.6543.429" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\KitX Contracts\KitX.Contract.CSharp\KitX.Contract.CSharp.csproj" />
+    <ProjectReference Include="..\..\KitX Rules\KitX.Web.Rules\KitX.Web.Rules.csproj" />
+  </ItemGroup>
+
 </Project>
