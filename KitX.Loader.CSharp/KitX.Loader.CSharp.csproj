@@ -1,20 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net6.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="KitX.Contract.CSharp" Version="23.4.6543.429" />
-    <PackageReference Include="KitX.Web.Rules" Version="23.4.6543.429" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="KitX.Contract.CSharp" Version="23.4.6543.429" />
+        <PackageReference Include="KitX.Web.Rules" Version="23.4.6543.429" />
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\KitX Contracts\KitX.Contract.CSharp\KitX.Contract.CSharp.csproj" />
-    <ProjectReference Include="..\..\KitX Rules\KitX.Web.Rules\KitX.Web.Rules.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\KitX Contracts\KitX.Contract.CSharp\KitX.Contract.CSharp.csproj" />
+        <ProjectReference Include="..\..\KitX Rules\KitX.Web.Rules\KitX.Web.Rules.csproj" />
+    </ItemGroup>
 
 </Project>
