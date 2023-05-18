@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="CommandLineParser" Version="2.9.1" />
         <PackageReference Include="KitX.Contract.CSharp" Version="23.4.6543.429" />
         <PackageReference Include="KitX.Web.Rules" Version="23.4.6543.429" />
     </ItemGroup>
