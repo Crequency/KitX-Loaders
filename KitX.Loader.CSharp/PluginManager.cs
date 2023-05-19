@@ -52,14 +52,14 @@ public class PluginManager
             break;
         }
 
-        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginStruct)}");
-
         return this;
     }
 
     private void InitPlugin(IIdentityInterface plugin, string path)
     {
         RegisterPluginStruct(plugin);
+
+        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginStruct)}");
 
         controller = plugin.GetController();
 
