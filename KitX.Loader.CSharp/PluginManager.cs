@@ -12,14 +12,7 @@ public class PluginManager
 
     private IController? controller;
 
-    private Queue<Command>? pluginSentCommandsBuffer;
-
     private Action<string>? sendMessageAction;
-
-    public PluginManager()
-    {
-        pluginSentCommandsBuffer = new();
-    }
 
     public PluginManager OnSendMessage(Action<string> action)
     {
@@ -64,7 +57,9 @@ public class PluginManager
         controller = plugin.GetController();
 
         controller.SetRootPath(Path.GetDirectoryName(path));
-        controller.SetCommandsSendBuffer(ref pluginSentCommandsBuffer);
+        controller.SetSendCommandAction(
+            x => SendMessage($"PluginCommand: {JsonSerializer.Serialize(x)}")
+        );
 
         controller.Start();
     }
