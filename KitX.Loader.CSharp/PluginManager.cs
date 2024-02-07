@@ -1,5 +1,5 @@
 ﻿using KitX.Contract.CSharp;
-using KitX.Web.Rules;
+using KitX.Shared.Plugin;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
 using System.Text.Json;
@@ -8,7 +8,7 @@ namespace KitX.Loader.CSharp;
 
 public class PluginManager
 {
-    private PluginStruct? pluginStruct;
+    private PluginInfo? pluginInfo;
 
     private IController? controller;
 
@@ -52,11 +52,11 @@ public class PluginManager
     {
         RegisterPluginStruct(plugin);
 
-        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginStruct)}");
+        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginInfo)}");
 
         controller = plugin.GetController();
 
-        controller.SetRootPath(Path.GetDirectoryName(path));
+        controller.SetRootPath(Path.GetDirectoryName(path)!);
         controller.SetSendCommandAction(
             x => SendMessage($"PluginCommand: {JsonSerializer.Serialize(x)}")
         );
@@ -66,7 +66,7 @@ public class PluginManager
 
     private void RegisterPluginStruct(IIdentityInterface identity)
     {
-        pluginStruct = new()
+        pluginInfo = new()
         {
             Name = identity.GetName(),
             Version = identity.GetVersion(),
