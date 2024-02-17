@@ -52,7 +52,7 @@ public class PluginManager
     {
         RegisterPluginStruct(plugin);
 
-        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginInfo)}");
+        SendMessage($"PluginInfo: {JsonSerializer.Serialize(pluginInfo)}");
 
         controller = plugin.GetController();
 
