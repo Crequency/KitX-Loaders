@@ -14,8 +14,12 @@ public partial class App : Application
         }
         catch (Exception o)
         {
-            MessageBox.Show(o.Message, "Loader Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(
+                o.Message,
+                "Loader Error",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
 
             Console.WriteLine(o.Message);
 

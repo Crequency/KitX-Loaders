@@ -1,116 +1,108 @@
-﻿using System.Net.Sockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 
 namespace KitX.Loader.CSharp;
 
 public class CommunicationManager
 {
-    private readonly TcpClient? client;
-
-    private readonly Thread? receiveThread;
-
-    private bool stillReceiving = true;
+    private readonly ClientWebSocket? Client;
 
     private int receiveBufferSize = 1024 * 1024 * 10; // 10MB
 
+    public Action<string>? OnReceiveMessage { get; set; }
+
     public CommunicationManager()
     {
-        client = new();
+        Client = new();
 
-        receiveThread = new(ReceiveMessage);
+        Client.Options.KeepAliveInterval = TimeSpan.FromSeconds(10);
     }
 
-    public CommunicationManager Connect(string address)
+    public async Task<CommunicationManager> Connect(string? url)
     {
-        var splited = address.Split(':');
+        ArgumentNullException.ThrowIfNull(url, nameof(url));
 
-        var ipv4 = splited[0];
+        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
 
-        if (!int.TryParse(splited[1], out var port))
-            throw new ArgumentException("Bad port number.", nameof(address));
+        await Client.ConnectAsync(new Uri(url), CancellationToken.None);
 
-        client?.Connect(ipv4, port);
+        var waiting = true;
 
-        receiveThread?.Start();
+        while (waiting)
+        {
+            switch (Client.State)
+            {
+                case WebSocketState.None:
+                    waiting = false;
+                    break;
+                case WebSocketState.Connecting:
+                    break;
+                case WebSocketState.Open:
+                    new Thread(async () => await ReceiveAsync()).Start();
+                    waiting = false;
+                    break;
+                case WebSocketState.CloseSent:
+                    waiting = false;
+                    break;
+                case WebSocketState.CloseReceived:
+                    waiting = false;
+                    break;
+                case WebSocketState.Closed:
+                    waiting = false;
+                    break;
+                case WebSocketState.Aborted:
+                    waiting = false;
+                    break;
+            }
+        }
 
         return this;
     }
 
-    public CommunicationManager SendMessage(string message)
+    public async Task<CommunicationManager> SendMessageAsync(string message)
     {
-        var stream = client?.GetStream();
-
-        if (stream is null) return this;
+        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
 
         var data = Encoding.UTF8.GetBytes(message);
 
-        try
-        {
-            stream?.Write(data, 0, data.Length);
+        var bufferToSend = new ArraySegment<byte>(data);
 
-            stream?.Flush();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-
-            Console.WriteLine(ex.StackTrace);
-
-            stream?.Close();
-
-            stream?.Dispose();
-        }
+        await Client.SendAsync(bufferToSend, WebSocketMessageType.Text, true, CancellationToken.None);
 
         return this;
     }
 
-    private void ReceiveMessage()
+    private async Task ReceiveAsync()
     {
-        if (client is null) return;
+        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
 
-        var stream = client?.GetStream();
+        var buffer = new byte[receiveBufferSize];
 
-        if (stream is null) return;
-
-        var buffer = new byte[receiveBufferSize];  //  Default 10 MB buffer
-
-        try
+        while (true)
         {
-            while (stillReceiving)
+            var receivedBuffer = new ArraySegment<byte>(buffer);
+
+            var result = await Client.ReceiveAsync(
+                receivedBuffer,
+                CancellationToken.None
+            );
+
+            if (result.MessageType == WebSocketMessageType.Close)
             {
+                await Client.CloseAsync(
+                    WebSocketCloseStatus.NormalClosure,
+                    string.Empty,
+                    CancellationToken.None
+                );
 
-                if (buffer is null) break;
-
-                var length = stream.Read(buffer, 0, buffer.Length);
-
-                if (length > 0)
-                {
-                    var msg = Encoding.UTF8.GetString(buffer, 0, length);
-
-                    //ToDo: Process `msg`
-                }
-                else
-                {
-                    stream?.Dispose();
-
-                    break;
-                }
+                break;
             }
 
-            stream?.Close();
+            var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
 
-            stream?.Dispose();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e.Message);
-            Console.WriteLine(e.StackTrace);
+            OnReceiveMessage?.Invoke(message);
 
-            stream?.Close();
-            stream?.Dispose();
-
-            client?.Close();
-            client?.Dispose();
+            if (!result.EndOfMessage) continue;
         }
     }
 
@@ -121,9 +113,15 @@ public class CommunicationManager
         return this;
     }
 
-    public CommunicationManager Stop()
+    public async Task<CommunicationManager> Close()
     {
-        stillReceiving = false;
+        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
+
+        await Client.CloseAsync(
+            WebSocketCloseStatus.NormalClosure,
+            string.Empty,
+            CancellationToken.None
+        );
 
         return this;
     }
