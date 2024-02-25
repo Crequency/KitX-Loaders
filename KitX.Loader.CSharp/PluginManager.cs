@@ -1,18 +1,45 @@
 ﻿using KitX.Contract.CSharp;
-using KitX.Web.Rules;
+using KitX.Shared.Plugin;
+using KitX.Shared.WebCommand;
+using KitX.Shared.WebCommand.Details;
+using KitX.Shared.WebCommand.Infos;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 
 namespace KitX.Loader.CSharp;
 
 public class PluginManager
 {
-    private PluginStruct? pluginStruct;
+    private PluginInfo? pluginInfo;
 
     private IController? controller;
 
     private Action<string>? sendMessageAction;
+
+    private readonly Connector Connector = Connector.Instance;
+
+    private static readonly JsonSerializerOptions serializerOptions = new()
+    {
+        WriteIndented = true,
+        IncludeFields = true,
+        PropertyNameCaseInsensitive = true,
+    };
+
+    public PluginManager()
+    {
+        Connector = Connector
+            .SetSender(
+                x => SendMessage(
+                    JsonSerializer.Serialize(x, serializerOptions)
+                )
+            )
+            .SetSerializer(
+                x => JsonSerializer.Serialize(x, serializerOptions)
+            );
+        ;
+    }
 
     public PluginManager OnSendMessage(Action<string> action)
     {
@@ -27,6 +54,7 @@ public class PluginManager
             throw new ArgumentException("File not exist.", nameof(path));
 
         var dirPath = Path.GetDirectoryName(path);
+
         var fileName = Path.GetFileName(path);
 
         if (dirPath is null) throw new Exception("Can't get directory path of plugin file.");
@@ -39,56 +67,58 @@ public class PluginManager
 
         var sub = container.GetExportedValues<IIdentityInterface>();
 
-        foreach (var item in sub)
-        {
-            InitPlugin(item, path);
-            break;
-        }
+        InitPlugin(sub.First());
 
         return this;
     }
 
-    private void InitPlugin(IIdentityInterface plugin, string path)
+    private void InitPlugin(IIdentityInterface plugin)
     {
-        RegisterPluginStruct(plugin);
+        pluginInfo = plugin.GetPluginInfo();
 
-        SendMessage($"PluginStruct: {JsonSerializer.Serialize(pluginStruct)}");
+        var pluginInfoToSend = Encoding.UTF8.GetBytes(
+            JsonSerializer.Serialize(pluginInfo, serializerOptions)
+        );
+
+        Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
 
         controller = plugin.GetController();
 
-        controller.SetRootPath(Path.GetDirectoryName(path));
         controller.SetSendCommandAction(
-            x => SendMessage($"PluginCommand: {JsonSerializer.Serialize(x)}")
+            x => SendMessage(JsonSerializer.Serialize(x, serializerOptions))
         );
 
         controller.Start();
     }
 
-    private void RegisterPluginStruct(IIdentityInterface identity)
-    {
-        pluginStruct = new()
-        {
-            Name = identity.GetName(),
-            Version = identity.GetVersion(),
-            DisplayName = identity.GetDisplayName(),
-            AuthorName = identity.GetAuthorName(),
-            PublisherName = identity.GetPublisherName(),
-            AuthorLink = identity.GetAuthorLink(),
-            PublisherLink = identity.GetPublisherLink(),
-            SimpleDescription = identity.GetSimpleDescription(),
-            ComplexDescription = identity.GetComplexDescription(),
-            TotalDescriptionInMarkdown = identity.GetTotalDescriptionInMarkdown(),
-            IconInBase64 = identity.GetIconInBase64(),
-            PublishDate = identity.GetPublishDate(),
-            LastUpdateDate = identity.GetLastUpdateDate(),
-            IsMarketVersion = identity.IsMarketVersion(),
-            Tags = new(),
-            Functions = identity.GetController().GetFunctions(),
-            RootStartupFileName = identity.GetRootStartupFileName(),
-        };
-    }
-
     private void SendMessage(string message) => sendMessageAction?.Invoke(message);
+
+    public void ReceiveMessage(string message)
+    {
+        var kwc = JsonSerializer.Deserialize<Request>(message, serializerOptions);
+
+        var command = JsonSerializer.Deserialize<Command>(kwc.Content, serializerOptions);
+
+        switch (command.Request)
+        {
+            case CommandRequestInfo.ReceiveWorkingDetail:
+
+                var workingDetailJson = Encoding.UTF8.GetString(command.Body);
+
+                var workingDetail = JsonSerializer.Deserialize<PluginWorkingDetail>(workingDetailJson);
+
+                if (workingDetail is not null)
+                    controller?.SetWorkingDetail(workingDetail);
+
+                break;
+
+            case CommandRequestInfo.ReceiveCommand:
+
+                controller?.Execute(command);
+
+                break;
+        }
+    }
 
     private static void AddDllResolveHandler(string appendPath)
     {
