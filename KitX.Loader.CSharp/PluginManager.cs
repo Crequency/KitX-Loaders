@@ -1,8 +1,8 @@
 ﻿using KitX.Contract.CSharp;
-using KitX.Shared.Plugin;
-using KitX.Shared.WebCommand;
-using KitX.Shared.WebCommand.Details;
-using KitX.Shared.WebCommand.Infos;
+using KitX.Shared.CSharp.Plugin;
+using KitX.Shared.CSharp.WebCommand;
+using KitX.Shared.CSharp.WebCommand.Details;
+using KitX.Shared.CSharp.WebCommand.Infos;
 using System.ComponentModel.Composition.Hosting;
 using System.Reflection;
 using System.Text;
