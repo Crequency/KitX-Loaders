@@ -1,6 +1,6 @@
-﻿using KitX.Loader.CSharp;
-using System;
+﻿using System;
 using System.Windows;
+using KitX.Loader.CSharp;
 
 namespace KitX.Loader.WPF.Core;
 
