@@ -13,6 +13,6 @@
 )
 
 $From..$To | ForEach-Object {
-    .\bin\Debug\net8.0-windows\KitX.Loader.WPF.Core.exe --load '..\..\KitX Plugins\TestPlugin.WPF.Core\bin\Debug\net8.0-windows\TestPlugin.WPF.Core.dll' --connect "ws://127.0.0.1:$Port/connectionId_$_";
+    .\bin\Debug\net8.0-windows\KitX.Loader.WPF.Core.exe --load '..\..\KitX Plugins\TestPlugin.WPF.Core\bin\Debug\net8.0-windows\TestPlugin.WPF.Core.dll' --connect "ws://127.0.0.1:$Port/$(New-Guid)";
     Start-Sleep $Sleep;
 }
