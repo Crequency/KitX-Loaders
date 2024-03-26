@@ -97,6 +97,8 @@ public class PluginManager
     {
         var kwc = JsonSerializer.Deserialize<Request>(message, serializerOptions);
 
+        if (kwc is null) return;
+
         var command = JsonSerializer.Deserialize<Command>(kwc.Content, serializerOptions);
 
         switch (command.Request)
