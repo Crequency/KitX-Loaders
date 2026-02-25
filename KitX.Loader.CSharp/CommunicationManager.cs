@@ -27,8 +27,9 @@ public class CommunicationManager
         await Client.ConnectAsync(new Uri(url), CancellationToken.None);
 
         var waiting = true;
+        var timeout = DateTime.Now.AddSeconds(30); // 30 second timeout
 
-        while (waiting)
+        while (waiting && DateTime.Now < timeout)
         {
             switch (Client.State)
             {
@@ -36,9 +37,10 @@ public class CommunicationManager
                     waiting = false;
                     break;
                 case WebSocketState.Connecting:
+                    await Task.Delay(10); // Wait a bit before checking again
                     break;
                 case WebSocketState.Open:
-                    new Thread(async () => await ReceiveAsync()).Start();
+                    _ = ReceiveAsync(); // Start receiving in background
                     waiting = false;
                     break;
                 case WebSocketState.CloseSent:

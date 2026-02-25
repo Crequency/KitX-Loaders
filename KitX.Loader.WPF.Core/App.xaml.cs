@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using KitX.Loader.CSharp;
 
@@ -6,11 +7,11 @@ namespace KitX.Loader.WPF.Core;
 
 public partial class App : Application
 {
-    private void Application_Startup(object sender, StartupEventArgs e)
+    private async void Application_Startup(object sender, StartupEventArgs e)
     {
         try
         {
-            ArgsParser.Parse(e.Args);
+            await ArgsParser.ParseAsync(e.Args);
         }
         catch (Exception o)
         {
