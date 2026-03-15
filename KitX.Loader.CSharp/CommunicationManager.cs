@@ -20,43 +20,79 @@ public class CommunicationManager
 
     public async Task<CommunicationManager> Connect(string? url)
     {
+        Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Starting connection to {url}");
+
         ArgumentNullException.ThrowIfNull(url, nameof(url));
 
-        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
+        if (Client is null)
+        {
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Client is NULL!");
+            throw new InvalidOperationException("ClientWebSocket is not initialized");
+        }
 
-        await Client.ConnectAsync(new Uri(url), CancellationToken.None);
+        Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Client state before connect: {Client.State}");
+
+        try
+        {
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Calling ConnectAsync...");
+            await Client.ConnectAsync(new Uri(url), CancellationToken.None);
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: ConnectAsync completed, state: {Client.State}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: ConnectAsync failed: {ex.Message}");
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Stack trace: {ex.StackTrace}");
+            throw;
+        }
 
         var waiting = true;
         var timeout = DateTime.Now.AddSeconds(30); // 30 second timeout
+
+        Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Waiting for connection open, initial state: {Client.State}");
 
         while (waiting && DateTime.Now < timeout)
         {
             switch (Client.State)
             {
                 case WebSocketState.None:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = None");
                     waiting = false;
                     break;
                 case WebSocketState.Connecting:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = Connecting...");
                     await Task.Delay(10); // Wait a bit before checking again
                     break;
                 case WebSocketState.Open:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = Open!");
                     _ = ReceiveAsync(); // Start receiving in background
                     waiting = false;
                     break;
                 case WebSocketState.CloseSent:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = CloseSent");
                     waiting = false;
                     break;
                 case WebSocketState.CloseReceived:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = CloseReceived");
                     waiting = false;
                     break;
                 case WebSocketState.Closed:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = Closed");
                     waiting = false;
                     break;
                 case WebSocketState.Aborted:
+                    Console.WriteLine($"[DEBUG] CommunicationManager.Connect: State = Aborted");
                     waiting = false;
                     break;
             }
         }
+
+        if (Client.State != WebSocketState.Open)
+        {
+            Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Failed to connect, final state: {Client.State}");
+            throw new InvalidOperationException($"WebSocket failed to connect, state: {Client.State}");
+        }
+
+        Console.WriteLine($"[DEBUG] CommunicationManager.Connect: Connection established!");
 
         return this;
     }

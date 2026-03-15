@@ -76,11 +76,22 @@ public class PluginManager
     {
         pluginInfo = plugin.GetPluginInfo();
 
+        Console.WriteLine($"[DEBUG] InitPlugin called, sendMessageAction is: {(sendMessageAction is null ? "NULL" : "SET")}");
+
         var pluginInfoToSend = Encoding.UTF8.GetBytes(
             JsonSerializer.Serialize(pluginInfo, serializerOptions)
         );
 
-        Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
+        Console.WriteLine($"[DEBUG] Sending RegisterPlugin request...");
+        try
+        {
+            Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
+            Console.WriteLine($"[DEBUG] RegisterPlugin sent successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] RegisterPlugin failed: {ex.Message}");
+        }
 
         controller = plugin.GetController();
 
@@ -91,7 +102,11 @@ public class PluginManager
         controller.Start();
     }
 
-    private void SendMessage(string message) => sendMessageAction?.Invoke(message);
+    private void SendMessage(string message)
+    {
+        Console.WriteLine($"[DEBUG] SendMessage called, action is: {(sendMessageAction is null ? "NULL" : "SET")}");
+        sendMessageAction?.Invoke(message);
+    }
 
     public void ReceiveMessage(string message)
     {
@@ -116,7 +131,48 @@ public class PluginManager
 
             case CommandRequestInfo.ReceiveCommand:
 
+                // 保存原始 RequestId 和 ConnectionId 用于响应
+                string? requestId = null;
+                string? pluginConnectionId = command.PluginConnectionId;
+                if (command.Tags is not null && command.Tags.TryGetValue("RequestId", out var reqId))
+                {
+                    requestId = reqId;
+                }
+
+                // 执行命令
                 controller?.Execute(command);
+
+                // 如果有 RequestId，发送响应
+                if (requestId is not null)
+                {
+                    // 构建响应消息
+                    var responseBody = $"Hello, {command.FunctionArgs?[0].Value ?? "World"}!";
+                    var responseBytes = Encoding.UTF8.GetBytes(responseBody);
+
+                    Console.WriteLine($"[DEBUG] Sending response: {responseBody}");
+
+                    var responseCommand = new Command
+                    {
+                        Request = CommandRequestInfo.ReceiveCommand,
+                        PluginConnectionId = pluginConnectionId ?? string.Empty,
+                        Body = responseBytes,
+                        BodyLength = responseBytes.Length,
+                        Tags = new Dictionary<string, string>
+                        {
+                            { "RequestId", requestId }
+                        }
+                    };
+
+                    var responseRequest = new Request
+                    {
+                        Content = JsonSerializer.Serialize(responseCommand, serializerOptions)
+                    };
+
+                    var responseJson = JsonSerializer.Serialize(responseRequest, serializerOptions);
+                    Console.WriteLine($"[DEBUG] Response JSON: {responseJson.Substring(0, Math.Min(200, responseJson.Length))}...");
+
+                    SendMessage(responseJson);
+                }
 
                 break;
         }

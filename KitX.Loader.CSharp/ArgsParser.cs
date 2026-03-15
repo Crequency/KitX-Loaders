@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using CommandLine;
 
 namespace KitX.Loader.CSharp;
@@ -41,6 +42,10 @@ public class ArgsParser
 
     private static async Task ParseOptionAsync(Options option)
     {
+        Console.WriteLine($"[DEBUG] ArgsParser: PluginPath = {option.PluginPath}");
+        Console.WriteLine($"[DEBUG] ArgsParser: ConnectUrl = {option.ConnectUrl}");
+        Console.WriteLine($"[DEBUG] ArgsParser: WorkingDirectory = {option.WorkingDirectory}");
+
         if (option.PluginPath is null)
             return;
 
@@ -50,8 +55,24 @@ public class ArgsParser
         var communicationManager = new CommunicationManager();
 
         if (option.ConnectUrl is not null)
-            communicationManager = await communicationManager.Connect(option.ConnectUrl);
-        else communicationManager = null;
+        {
+            Console.WriteLine($"[DEBUG] Connecting to {option.ConnectUrl}...");
+            try
+            {
+                communicationManager = await communicationManager.Connect(option.ConnectUrl);
+                Console.WriteLine($"[DEBUG] Connected successfully!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DEBUG] Connection failed: {ex.Message}");
+                Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
+            }
+        }
+        else
+        {
+            Console.WriteLine("[DEBUG] No ConnectUrl provided, running without connection");
+            communicationManager = null;
+        }
 
         var pluginManager = new PluginManager()
             .OnSendMessage(x => communicationManager?.SendMessageAsync(x))
@@ -59,5 +80,25 @@ public class ArgsParser
 
         if (communicationManager is not null)
             communicationManager.OnReceiveMessage = x => pluginManager.ReceiveMessage(x);
+
+        // === 进程保活：等待退出信号 ===
+        var exitSignal = new ManualResetEventSlim(false);
+
+        // 响应 Ctrl+C / Ctrl+Break
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            exitSignal.Set();
+        };
+
+        // 响应进程终止事件
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => exitSignal.Set();
+
+        // 等待退出信号
+        exitSignal.Wait();
+
+        // 优雅退出：关闭 WebSocket 连接
+        if (communicationManager is not null)
+            await communicationManager.Close();
     }
 }
