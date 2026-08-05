@@ -41,7 +41,7 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[DEBUG] Error closing communication: {ex.Message}");
+                Console.WriteLine(ex.Message);
             }
         }
     }

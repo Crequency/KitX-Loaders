@@ -76,21 +76,17 @@ public class PluginManager
     {
         pluginInfo = plugin.GetPluginInfo();
 
-        Console.WriteLine($"[DEBUG] InitPlugin called, sendMessageAction is: {(sendMessageAction is null ? "NULL" : "SET")}");
-
         var pluginInfoToSend = Encoding.UTF8.GetBytes(
             JsonSerializer.Serialize(pluginInfo, serializerOptions)
         );
 
-        Console.WriteLine($"[DEBUG] Sending RegisterPlugin request...");
         try
         {
             Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
-            Console.WriteLine($"[DEBUG] RegisterPlugin sent successfully");
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"[DEBUG] RegisterPlugin failed: {ex.Message}");
+            // 注册失败不阻断插件本地运行，保留原行为
         }
 
         controller = plugin.GetController();
@@ -104,7 +100,6 @@ public class PluginManager
 
     private void SendMessage(string message)
     {
-        Console.WriteLine($"[DEBUG] SendMessage called, action is: {(sendMessageAction is null ? "NULL" : "SET")}");
         sendMessageAction?.Invoke(message);
     }
 

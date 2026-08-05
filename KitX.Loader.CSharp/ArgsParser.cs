@@ -42,44 +42,10 @@ public class ArgsParser
 
     private static async Task ParseOptionAsync(Options option)
     {
-        Console.WriteLine($"[DEBUG] ArgsParser: PluginPath = {option.PluginPath}");
-        Console.WriteLine($"[DEBUG] ArgsParser: ConnectUrl = {option.ConnectUrl}");
-        Console.WriteLine($"[DEBUG] ArgsParser: WorkingDirectory = {option.WorkingDirectory}");
-
         if (option.PluginPath is null)
             return;
 
-        if (option.WorkingDirectory is not null)
-            Directory.SetCurrentDirectory(option.WorkingDirectory);
-
-        var communicationManager = new CommunicationManager();
-
-        if (option.ConnectUrl is not null)
-        {
-            Console.WriteLine($"[DEBUG] Connecting to {option.ConnectUrl}...");
-            try
-            {
-                communicationManager = await communicationManager.Connect(option.ConnectUrl);
-                Console.WriteLine($"[DEBUG] Connected successfully!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[DEBUG] Connection failed: {ex.Message}");
-                Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("[DEBUG] No ConnectUrl provided, running without connection");
-            communicationManager = null;
-        }
-
-        var pluginManager = new PluginManager()
-            .OnSendMessage(x => communicationManager?.SendMessageAsync(x))
-            .LoadPlugin(option.PluginPath);
-
-        if (communicationManager is not null)
-            communicationManager.OnReceiveMessage = x => pluginManager.ReceiveMessage(x);
+        var communicationManager = await PrepareAsync(option);
 
         // === 进程保活：等待退出信号 ===
         var exitSignal = new ManualResetEventSlim(false);
@@ -107,53 +73,64 @@ public class ArgsParser
     /// 适用于有自身消息循环的宿主（如 WPF），由宿主管理进程生命周期。
     /// </summary>
     /// <param name="args">命令行参数</param>
-    /// <returns>用于优雅关闭的 CommunicationManager 实例</returns>
+    /// <returns>用于优雅关闭的 CommunicationManager 实例；无连接或解析失败时为 null</returns>
     public static async Task<CommunicationManager?> LoadWithoutBlockingAsync(string[] args)
     {
-        CommunicationManager? communicationManager = null;
+        // 通过 TCS 等待 WithParsed 的异步回调真正完成，避免在插件加载前就返回（竞态）。
+        var tcs = new TaskCompletionSource<CommunicationManager?>();
 
         Parser.Default.ParseArguments<Options>(args)
             .WithParsed(async option =>
             {
-                Console.WriteLine($"[DEBUG] ArgsParser: PluginPath = {option.PluginPath}");
-                Console.WriteLine($"[DEBUG] ArgsParser: ConnectUrl = {option.ConnectUrl}");
-                Console.WriteLine($"[DEBUG] ArgsParser: WorkingDirectory = {option.WorkingDirectory}");
-
-                if (option.PluginPath is null)
-                    return;
-
-                if (option.WorkingDirectory is not null)
-                    Directory.SetCurrentDirectory(option.WorkingDirectory);
-
-                communicationManager = new CommunicationManager();
-
-                if (option.ConnectUrl is not null)
+                try
                 {
-                    Console.WriteLine($"[DEBUG] Connecting to {option.ConnectUrl}...");
-                    try
-                    {
-                        communicationManager = await communicationManager.Connect(option.ConnectUrl);
-                        Console.WriteLine($"[DEBUG] Connected successfully!");
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"[DEBUG] Connection failed: {ex.Message}");
-                        communicationManager = null;
-                    }
+                    tcs.SetResult(await PrepareAsync(option));
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine("[DEBUG] No ConnectUrl provided, running without connection");
-                    communicationManager = null;
+                    tcs.SetException(ex);
                 }
-
-                var pluginManager = new PluginManager()
-                    .OnSendMessage(x => communicationManager?.SendMessageAsync(x))
-                    .LoadPlugin(option.PluginPath);
-
-                if (communicationManager is not null)
-                    communicationManager.OnReceiveMessage = x => pluginManager.ReceiveMessage(x);
+            })
+            .WithNotParsed(errors =>
+            {
+                tcs.SetResult(null);
             });
+
+        return await tcs.Task;
+    }
+
+    /// <summary>
+    /// 公共加载流程：切换工作目录、建立连接、加载插件并接线消息回调。
+    /// 连接失败时回退为无连接模式，仅加载插件。
+    /// </summary>
+    private static async Task<CommunicationManager?> PrepareAsync(Options option)
+    {
+        if (option.PluginPath is null)
+            return null;
+
+        if (option.WorkingDirectory is not null)
+            Directory.SetCurrentDirectory(option.WorkingDirectory);
+
+        CommunicationManager? communicationManager = null;
+
+        if (option.ConnectUrl is not null)
+        {
+            try
+            {
+                communicationManager = await new CommunicationManager().Connect(option.ConnectUrl);
+            }
+            catch
+            {
+                // 连接失败：回退为无连接模式，插件仍可本地运行
+            }
+        }
+
+        var pluginManager = new PluginManager()
+            .OnSendMessage(x => communicationManager?.SendMessageAsync(x))
+            .LoadPlugin(option.PluginPath);
+
+        if (communicationManager is not null)
+            communicationManager.OnReceiveMessage = x => pluginManager.ReceiveMessage(x);
 
         return communicationManager;
     }
