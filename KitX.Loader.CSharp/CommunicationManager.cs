@@ -22,13 +22,22 @@ public class CommunicationManager
     {
         ArgumentNullException.ThrowIfNull(url, nameof(url));
 
-        ArgumentNullException.ThrowIfNull(Client, nameof(Client));
+        if (Client is null)
+            throw new InvalidOperationException("ClientWebSocket is not initialized");
 
-        await Client.ConnectAsync(new Uri(url), CancellationToken.None);
+        try
+        {
+            await Client.ConnectAsync(new Uri(url), CancellationToken.None);
+        }
+        catch
+        {
+            throw;
+        }
 
         var waiting = true;
+        var timeout = DateTime.Now.AddSeconds(30); // 30 second timeout
 
-        while (waiting)
+        while (waiting && DateTime.Now < timeout)
         {
             switch (Client.State)
             {
@@ -36,9 +45,10 @@ public class CommunicationManager
                     waiting = false;
                     break;
                 case WebSocketState.Connecting:
+                    await Task.Delay(10); // Wait a bit before checking again
                     break;
                 case WebSocketState.Open:
-                    new Thread(async () => await ReceiveAsync()).Start();
+                    _ = ReceiveAsync(); // Start receiving in background
                     waiting = false;
                     break;
                 case WebSocketState.CloseSent:
@@ -55,6 +65,9 @@ public class CommunicationManager
                     break;
             }
         }
+
+        if (Client.State != WebSocketState.Open)
+            throw new InvalidOperationException($"WebSocket failed to connect, state: {Client.State}");
 
         return this;
     }

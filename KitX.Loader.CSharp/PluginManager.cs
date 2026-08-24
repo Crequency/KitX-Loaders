@@ -80,7 +80,14 @@ public class PluginManager
             JsonSerializer.Serialize(pluginInfo, serializerOptions)
         );
 
-        Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
+        try
+        {
+            Connector.Request().RegisterPlugin(pluginInfoToSend, pluginInfoToSend.Length).Send();
+        }
+        catch
+        {
+            // 注册失败不阻断插件本地运行，保留原行为
+        }
 
         controller = plugin.GetController();
 
@@ -91,7 +98,10 @@ public class PluginManager
         controller.Start();
     }
 
-    private void SendMessage(string message) => sendMessageAction?.Invoke(message);
+    private void SendMessage(string message)
+    {
+        sendMessageAction?.Invoke(message);
+    }
 
     public void ReceiveMessage(string message)
     {
@@ -116,6 +126,7 @@ public class PluginManager
 
             case CommandRequestInfo.ReceiveCommand:
 
+                // 执行命令 - 插件通过 sendCommandAction 发送响应
                 controller?.Execute(command);
 
                 break;
